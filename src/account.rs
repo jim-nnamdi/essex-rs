@@ -6,7 +6,8 @@ use anyhow::{Result, Ok, Error};
 pub struct Account {
   pub acc_private: SecretKey,
   pub acc_public: PublicKey,
-  pub acc_signed : Signature
+  pub acc_signed : Signature,
+  pub acc_balance: u32
 }
 
 impl Account {
@@ -16,7 +17,7 @@ impl Account {
     log::info!("secret: {:?} public: {:?}", secret, public);
     let mess = Message::from_digest_slice(msg.as_bytes())?;
     let sig = secp.sign_ecdsa(&mess, &secret);
-    let new_acc = Account { acc_private: secret, acc_public: public, acc_signed: sig };
+    let new_acc = Account { acc_private: secret, acc_public: public, acc_signed: sig, acc_balance:0 };
     log::info!("new-acc created: {:?}", new_acc);
     Ok(new_acc)
   }

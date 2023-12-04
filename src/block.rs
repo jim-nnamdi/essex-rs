@@ -7,6 +7,7 @@ trait _BlockT {
     fn validate_block(&mut self, prevblock: Block) -> Result<bool>;
 }
 
+#[derive(Debug)]
 pub struct Block {
     pub block_hash: &'static [u8],
     pub prev_hash: &'static [u8],

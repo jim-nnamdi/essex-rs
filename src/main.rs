@@ -4,6 +4,7 @@ use secp256k1::Message;
 
 pub mod  block;
 pub mod blockchain;
+pub mod account;
 
 fn check_rsa(msg:&str) {
     let mut rng = rand::thread_rng();

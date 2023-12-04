@@ -11,3 +11,5 @@ rsa = {version="*"}
 secp256k1 = {version = "0.28.0", features = ["rand"]}
 anyhow="*"
 log ="*"
+serde = {version="*"}
+serde_json = "1.0"

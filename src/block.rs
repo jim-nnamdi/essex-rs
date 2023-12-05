@@ -1,4 +1,5 @@
-use std::time::{Duration, SystemTime};
+use core::panic;
+use std::{time::{Duration, SystemTime}, cell::RefCell, rc::{Weak, Rc}};
 
 use anyhow::{Ok, Result};
 
@@ -14,7 +15,7 @@ pub struct Block {
     pub validator: &'static str,
     pub signature: &'static [u8],
     pub block_data: Vec<String>,
-    pub valid: bool,
+    pub valid: Rc<bool>,
     pub timestamp: SystemTime,
 }
 
@@ -27,7 +28,7 @@ impl Default for Block {
             block_data: Vec::new(),
             validator: "genesis",
             signature: sec8ref,
-            valid: true,
+            valid: Rc::new(false),
             timestamp: SystemTime::now(),
         }
     }
@@ -38,7 +39,8 @@ impl _BlockT for Block {
         Block::default()
     }
     fn validate_block(&mut self, prevblock: Block) -> Result<bool> {
-        if prevblock.valid {
+      let prev_valid = Rc::try_unwrap(prevblock.valid).unwrap_or_else(|_| panic!("last elem was shared"));
+        if prev_valid {
             if prevblock.block_hash.eq(self.prev_hash) {
                 log::info!("prev-hash = {:?}", self.prev_hash);
                 let block_creation_time = self.timestamp;

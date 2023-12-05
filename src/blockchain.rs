@@ -1,7 +1,7 @@
 use crate::block;
 use anyhow::{self, Ok, Result};
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
-use std::mem;
+use std::{mem, rc::Rc};
 
 type Block8 = block::Block;
 pub struct Blockchain {
@@ -20,7 +20,8 @@ impl Blockchain {
     }
     pub fn add_block(&mut self, block: Block8) -> Result<bool> {
         if self.chain.len() < 20 {
-            if block.valid {
+            let block_valid = Rc::try_unwrap(block.valid.clone()).unwrap_or_else(|_| panic!(""));
+            if block_valid {
                 let mut block_data = [
                     block.block_data.get(0).unwrap().as_str().as_bytes(),
                     block.block_hash,

@@ -2,6 +2,7 @@ use rand::rngs::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey, Pkcs1v15Encrypt};
 use secp256k1::Message;
 
+pub mod sec8;
 pub mod  block;
 pub mod blockchain;
 pub mod account;

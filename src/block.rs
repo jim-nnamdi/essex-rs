@@ -1,10 +1,14 @@
 use core::panic;
-use std::{time::{Duration, SystemTime}, cell::RefCell, rc::{Weak, Rc}};
+use std::{
+    rc::Rc,
+    time::{Duration, SystemTime},
+};
 
 use anyhow::{Ok, Result};
 
 trait _BlockT {
     fn new() -> Self;
+    fn create_block(&mut self);
     fn validate_block(&mut self, prevblock: Block) -> Result<bool>;
 }
 
@@ -38,8 +42,14 @@ impl _BlockT for Block {
     fn new() -> Self {
         Block::default()
     }
+
+    fn create_block(&mut self) {
+
+    }
+
     fn validate_block(&mut self, prevblock: Block) -> Result<bool> {
-      let prev_valid = Rc::try_unwrap(prevblock.valid).unwrap_or_else(|_| panic!("last elem was shared"));
+        let prev_valid =
+            Rc::try_unwrap(prevblock.valid).unwrap_or_else(|_| panic!("last elem was shared"));
         if prev_valid {
             if prevblock.block_hash.eq(self.prev_hash) {
                 log::info!("prev-hash = {:?}", self.prev_hash);

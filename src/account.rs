@@ -11,6 +11,8 @@ pub struct Account {
 }
 
 impl Account {
+  // user should store the msg 
+  // msg would be needed to create block
   pub fn create(msg:&str) -> Result<Account, Error> {
     let secp = secp256k1::Secp256k1::new();
     let (secret, public) = secp.generate_keypair(&mut OsRng);

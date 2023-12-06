@@ -22,11 +22,7 @@ impl Blockchain {
         if self.chain.len() < 20 {
             let block_valid = Rc::try_unwrap(block.valid.clone()).unwrap_or_else(|_| panic!(""));
             if block_valid {
-                let mut block_data = [
-                    block.block_data.get(0).unwrap().as_str().as_bytes(),
-                    block.block_hash,
-                ]
-                .concat();
+                let mut block_data = [block.block_data.get(0).unwrap().as_str().as_bytes()].concat();
                 let block_bytes = String::from_utf8(mem::take(&mut block_data))?;
                 let mut rng = rand::thread_rng();
                 let bits = 2048;

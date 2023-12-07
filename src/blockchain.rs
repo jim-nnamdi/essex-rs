@@ -20,7 +20,7 @@ impl Blockchain {
     }
     pub fn add_block(&mut self, block: Block8) -> Result<bool> {
         if self.chain.len() < 20 {
-            let block_valid = Rc::try_unwrap(block.valid.clone()).unwrap_or_else(|_| panic!(""));
+            let block_valid = block.valid.clone();
             if block_valid {
                 let mut block_data = [block.block_data.get(0).unwrap().as_str().as_bytes()].concat();
                 let block_bytes = String::from_utf8(mem::take(&mut block_data))?;

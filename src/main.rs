@@ -1,3 +1,5 @@
+use account::Account;
+use block::{_BlockT, Block};
 use rand::rngs::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey, Pkcs1v15Encrypt};
 use secp256k1::Message;
@@ -36,6 +38,9 @@ fn check_secp256k1(msg:&[u8]) {
 }
 
 fn main() {
-    check_secp256k1("hello world".as_bytes());
-    check_rsa("hello world");
+    let genesis = Block::new();
+    let account = Account::create("hello").unwrap();
+    let cb = <Block as _BlockT>::create_essex_block(genesis,account,"hello").unwrap();
+    let der = serde_json::to_string(&cb).unwrap();
+    println!("block={:?}",der);
 }

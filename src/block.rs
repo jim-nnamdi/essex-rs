@@ -5,89 +5,86 @@ use std::{
 };
 
 use anyhow::{Ok, Result};
-use secp256k1::{Message, SecretKey,ecdsa::Signature, PublicKey, Secp256k1};
+
+use secp256k1::hashes::sha256;
+use secp256k1::{Message, ecdsa::Signature, Secp256k1};
+use serde::{Deserialize, Serialize};
 
 use crate::{account::Account, sec8::{self, sec8_block_id_hash}};
-const vmax: u32 = 40;
-trait _BlockT {
-    fn new(&self) -> Self;
-    fn create_block(&mut self, block:Block, acc:Account, msg:&str)->Result<Block>;
-    fn validate_block(&mut self, prevblock: Block) -> Result<bool>;
+const VMAX: u32 = 30;
+pub trait _BlockT {
+    fn new() -> Self;
+    fn create_essex_block(block:Block, acc:Account, msg:&str)->Result<Block>;
+    fn validate_block(prevblock: Block) -> Result<bool>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Block {
-    pub block_hash: SecretKey,
-    pub prev_hash: SecretKey,
-    pub validator: PublicKey,
-    pub signature: Signature,
+    pub block_hash: String,
+    pub prev_hash: String,
+    pub validator: String,
+    pub signature: String,
     pub block_data: Vec<String>,
-    pub valid: Rc<bool>,
+    pub valid: bool,
     pub timestamp: SystemTime,
 }
 
 impl Default for Block {
     fn default() -> Self {
         let sec8_ks = sec8_block_id_hash().unwrap();
-        let sec8_mess = Message::from_digest_slice("".as_bytes()).unwrap();
+        let sec8_mess = Message::from_hashed_data::<sha256::Hash>("".as_bytes());
         let sec8_sg = secp256k1::Secp256k1::sign_ecdsa(&Secp256k1::new(),&sec8_mess, &sec8_ks.0);
         Block {
-            block_hash: sec8_ks.0,
-            prev_hash: sec8_ks.0,
+            block_hash: sec8_ks.0.display_secret().to_string(),
+            prev_hash: sec8_ks.0.display_secret().to_string(),
             block_data: Vec::new(),
-            validator: sec8_ks.1,
-            signature: sec8_sg,
-            valid: Rc::new(false),
+            validator: sec8_ks.1.to_string(),
+            signature: sec8_sg.to_string(),
+            valid: false,
             timestamp: SystemTime::now(),
-        }
+        }.to_owned()
     }
 }
 
 impl _BlockT for Block {
-    fn new(&self) -> Self {
+    fn new() -> Self {
         Block::default()
     }
 
     // pass same message used in acc creation ...
-    fn create_block(&mut self,mut block:Block, acc:Account, msg:&str) -> Result<Block> {
-        let check_validated = self.validate_block(mem::take(&mut block)).is_ok();
+    fn create_essex_block(mut block:Block, acc:Account, msg:&str) -> Result<Block> {
+        // let's assume the genesis block was passed in the fn
+        let check_validated = Self::validate_block(mem::take(&mut block)).is_ok();
+        // by default the genesis block should pass this logic
         if !check_validated {log::error!("invalid previous block");}
+        // secp256k1 algorithm is to be used for signatures
         let scp = secp256k1::Secp256k1::new();
-        let mex = Message::from_digest_slice(msg.as_bytes()).unwrap();
+        // msg is same as the one user had during acc creation
+        let mex = Message::from_hashed_data::<sha256::Hash>(msg.as_bytes());
         let ubal = acc.acc_balance;
-        let vok = ubal > vmax;
+        // 0x1E min val a validator should have to create block
+        let vok = ubal > VMAX;
+        // validator loses coins because of illegal tx
         if !vok{log::error!("insufficient balance");}
-        let block = Block{block_hash:sec8::sec8_block_id_hash().unwrap().0,prev_hash:block.block_hash,validator:acc.acc_public,signature:acc.acc_signed,block_data:vec![],valid:Rc::new(true),timestamp:SystemTime::now()};
+        let essex_secret = sec8::sec8_block_id_hash().unwrap().0.display_secret().to_string();
+        let block = Block{block_hash:essex_secret,prev_hash:block.block_hash,validator:acc.acc_public.to_string(),signature:acc.acc_signed.to_string(),block_data:vec![],valid:true,timestamp:SystemTime::now()};
+        // verification on the validator data
         scp.verify_ecdsa(&mex, &acc.acc_signed, &acc.acc_public).unwrap();
         Ok(block)
     }
 
-    fn validate_block(&mut self, prevblock: Block) -> Result<bool> {
-        let prev_valid =
-            Rc::try_unwrap(prevblock.valid).unwrap_or_else(|_| panic!("last elem was shared"));
+    fn validate_block(prevblock: Block) -> Result<bool> {
+        let prev_valid = prevblock.valid;
         if prev_valid {
-            if prevblock.block_hash.eq(&self.prev_hash) {
-                log::info!("prev-hash = {:?}", self.prev_hash);
-                let block_creation_time = self.timestamp;
-                let two_hours_future = SystemTime::now()
-                    .checked_add(Duration::from_secs(7200))
-                    .unwrap();
-                let block_time_diff = two_hours_future.duration_since(block_creation_time)?;
-                if block_time_diff < Duration::from_secs(7200) {
-                    let parse_bloc_data = self.block_data.get(0);
-                    match parse_bloc_data {
-                        Some(bloc_data) => {
-                            // implement kafka sending & p2p here ...
-                            log::info!("block validated {}", bloc_data);
-                            return Ok(true);
-                        }
-                        None => {
-                            log::warn!("no block validated");
-                            return Ok(false);
-                        }
-                    }
-                }
-            }
+                // if previous block is valid get creation time
+                let block_creation_time = prevblock.timestamp;
+                // check_add to see that block is > 0x02 hours
+                let ox02 = SystemTime::now()
+                    .checked_add(Duration::from_secs(7200)).ok_or("invalid time").unwrap();
+                // fetch the duration since the block creation time
+                let block_time_diff = ox02.duration_since(block_creation_time)?;
+                // if the block difference is < 0x02 hours validate!
+                if block_time_diff < Duration::from_secs(7200) {return Ok(true);}
         }
         Ok(false)
     }

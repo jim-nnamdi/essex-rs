@@ -10,7 +10,7 @@ pub mod blockchain;
 pub mod account;
 pub mod transaction;
 
-fn check_rsa(msg:&str) {
+fn _check_rsa(msg:&str) {
     let mut rng = rand::thread_rng();
     let bits = 2048;
     let private_key =  RsaPrivateKey::new(&mut rng, bits).unwrap();
@@ -21,7 +21,7 @@ fn check_rsa(msg:&str) {
     assert_eq!(msg.as_bytes(), &decrypt_data[..]);
 }
 
-fn check_secp256k1(msg:&[u8]) {
+fn _check_secp256k1(msg:&[u8]) {
     let secp = secp256k1::Secp256k1::new();
     let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
     println!("sec-key = {:?} pub-key = {:?}", secret_key, public_key);

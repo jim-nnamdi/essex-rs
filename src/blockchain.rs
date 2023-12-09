@@ -1,16 +1,17 @@
 use crate::block;
 use anyhow::{self, Ok, Result};
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
-use std::{mem, rc::Rc};
+use std::{mem, time::SystemTime};
 
 type Block8 = block::Block;
 pub struct Blockchain {
     pub chain: Vec<Block8>,
+    pub timestamp:SystemTime
 }
 
 impl Default for Blockchain {
     fn default() -> Self {
-        Blockchain { chain: Vec::new() }
+        Blockchain { chain: Vec::new() , timestamp:SystemTime::now()}
     }
 }
 
@@ -18,7 +19,7 @@ impl Blockchain {
     pub fn new() -> Self {
         Blockchain::default()
     }
-    pub fn add_block(&mut self, block: Block8) -> Result<bool> {
+    pub fn add_block(&mut self, block: Block8) -> Result<Blockchain> {
         if self.chain.len() < 20 {
             let block_valid = block.valid.clone();
             if block_valid {
@@ -32,10 +33,12 @@ impl Blockchain {
                     public.encrypt(&mut rng, Pkcs1v15Encrypt, block_bytes.as_bytes())?;
                 let dec_block = secret.decrypt(Pkcs1v15Encrypt, &enc_block)?;
                 assert_eq!(&block_data[..], &dec_block[..]);
-                self.chain.push(block);
-                return Ok(true);
+                let new_blockchain = Blockchain{chain:vec![block.clone()], timestamp:SystemTime::now()};
+                return Ok(new_blockchain);
             }
         }
-        Ok(false)
+        // for every default blockchain returned
+        // invalidate the network resource ...
+        Ok(Blockchain::default())
     }
 }

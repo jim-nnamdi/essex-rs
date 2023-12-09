@@ -1,13 +1,13 @@
 use core::panic;
 use std::{
     rc::Rc,
-    time::{Duration, SystemTime}, mem
+    time::{Duration, SystemTime}, mem, io::Write
 };
 
 use anyhow::{Ok, Result};
 
 use secp256k1::hashes::sha256;
-use secp256k1::{Message, ecdsa::Signature, Secp256k1};
+use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
 
 use crate::{account::Account, sec8::{self, sec8_block_id_hash}};
@@ -68,6 +68,9 @@ impl _BlockT for Block {
         if !vok{log::error!("insufficient balance");}
         let essex_secret = sec8::sec8_block_id_hash().unwrap().0.display_secret().to_string();
         let block = Block{block_hash:essex_secret,prev_hash:block.block_hash,validator:acc.acc_public.to_string(),signature:acc.acc_signed.to_string(),block_data:vec![],valid:true,timestamp:SystemTime::now()};
+        let mut data_store = std::fs::File::open("./block.txt")?;
+        let serialise_block = serde_json::to_string(&block)?;
+        let _ = data_store.write_all(serialise_block.as_bytes())?;
         // verification on the validator data
         scp.verify_ecdsa(&mex, &acc.acc_signed, &acc.acc_public).unwrap();
         Ok(block)

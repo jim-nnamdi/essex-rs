@@ -3,7 +3,7 @@ use rsa::{RsaPrivateKey, RsaPublicKey};
 use secp256k1::{PublicKey, SecretKey};
 use std::time::SystemTime;
 
-use crate::{account::Account, block::Block};
+use crate::{account::account::Account, block::block::Block};
 
 #[derive(Debug)]
 pub struct TxHeader {

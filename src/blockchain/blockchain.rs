@@ -3,7 +3,7 @@ use anyhow::{self, Ok, Result};
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 use std::{mem, time::SystemTime};
 
-type Block8 = block::Block;
+type Block8 = block::block::Block;
 pub struct Blockchain {
     pub chain: Vec<Block8>,
     pub timestamp:SystemTime

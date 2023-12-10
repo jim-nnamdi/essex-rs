@@ -11,8 +11,8 @@ use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    account::Account,
-    sec8::{self, sec8_block_id_hash},
+    account::account::Account,
+    sec8::sec8::{self, sec8_block_id_hash},
 };
 const VMAX: u32 = 30;
 pub trait _BlockT {

@@ -1,11 +1,11 @@
-use account::Account;
-use block::{_BlockT, Block};
 use rand::rngs::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey, Pkcs1v15Encrypt};
 use secp256k1::Message;
 
+use crate::block::block::_BlockT;
+
 pub mod sec8;
-pub mod  block;
+pub mod block;
 pub mod blockchain;
 pub mod account;
 pub mod transaction;
@@ -38,9 +38,9 @@ fn _check_secp256k1(msg:&[u8]) {
 }
 
 fn main() {
-    let genesis = Block::new();
-    let account = Account::create("hello").unwrap();
-    let cb = <Block as _BlockT>::create_essex_block(genesis,account,"hello").unwrap();
+    let genesis = block::block::Block::new();
+    let account = account::account::Account::create("hello").unwrap();
+    let cb = <block::block::Block as _BlockT>::create_essex_block(genesis,account,"hello").unwrap();
     let der = serde_json::to_string(&cb).unwrap();
     println!("block={:?}",der);
 }

@@ -9,6 +9,8 @@ pub mod block;
 pub mod blockchain;
 pub mod account;
 pub mod transaction;
+pub mod dynamic;
+
 
 fn _check_rsa(msg:&str) {
     let mut rng = rand::thread_rng();

@@ -1,21 +1,25 @@
 use crate::block;
 use anyhow::{self, Ok, Result};
+use rand::rngs::OsRng;
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
-use tokio::{io::{self, AsyncBufReadExt}, select};
-use tracing_subscriber::EnvFilter;
-use std::{mem, time::{SystemTime, Duration}, collections::hash_map::DefaultHasher};
-use libp2p::{swarm::NetworkBehaviour,swarm::SwarmEvent, gossipsub, mdns, tcp, noise, yamux};
-use std::hash::{Hash, Hasher};
+use secp256k1::{hashes::sha256, Message};
+use serde::{Deserialize, Serialize};
+use std::{mem, time::SystemTime, io::Write};
 
 type Block8 = block::block::Block;
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Blockchain {
     pub chain: Vec<Block8>,
-    pub timestamp:SystemTime
+    pub timestamp: SystemTime,
 }
 
 impl Default for Blockchain {
     fn default() -> Self {
-        Blockchain { chain: Vec::new() , timestamp:SystemTime::now()}
+        Blockchain {
+            chain: vec![],
+            timestamp: SystemTime::now(),
+        }
     }
 }
 
@@ -23,112 +27,83 @@ impl Blockchain {
     pub fn new() -> Self {
         Blockchain::default()
     }
-    pub fn add_block(&mut self, block: Block8) -> Result<Blockchain> {
-        if self.chain.len() < 20 {
-            let block_valid = block.valid.clone();
-            if block_valid {
-                let mut block_data = [block.block_data.get(0).unwrap().as_str().as_bytes()].concat();
-                let block_bytes = String::from_utf8(mem::take(&mut block_data))?;
-                let mut rng = rand::thread_rng();
-                let bits = 2048;
-                let secret = RsaPrivateKey::new(&mut rng, bits)?;
-                let public = RsaPublicKey::from(&secret);
-                let enc_block =
-                    public.encrypt(&mut rng, Pkcs1v15Encrypt, block_bytes.as_bytes())?;
-                let dec_block = secret.decrypt(Pkcs1v15Encrypt, &enc_block)?;
-                assert_eq!(&block_data[..], &dec_block[..]);
-                let new_blockchain = Blockchain{chain:vec![block.clone()], timestamp:SystemTime::now()};
-                return Ok(new_blockchain);
+    pub fn _add_block_to_chain(block: Block8) -> Self {
+        // check to see if block is valid
+        // pass in custom built function to check
+        // and verify validity of the block
+        if block.valid {
+            // hash the entire blockchain data
+            // using secp256k1 algorithm: see ECC
+            let blck_fn = secp256k1::Secp256k1::new();
+            let blck_kp = blck_fn.generate_keypair(&mut OsRng);
+            // using the block hash we hash and generate a message digest
+            // to completely hash the data ...
+            let blck_msg = Message::from_hashed_data::<sha256::Hash>(block.block_hash.as_bytes());
+            let blck_sig = blck_fn.sign_ecdsa(&blck_msg, &blck_kp.0);
+            // verification of data signature to ensure chain validity
+            let blck_ver = blck_fn.verify_ecdsa(&blck_msg, &blck_sig, &blck_kp.1);
+            // ensure verification passes and then merge block
+            // to the existing chain otherwise truncate user
+            if blck_ver.is_ok() {
+                let mut chain = Vec::new();
+                chain.push(block);
+                // we're using system time based on locale
+                let bchain = Blockchain {
+                    chain,
+                    timestamp: SystemTime::now(),
+                };
+                // save this data to the local blockchain
+                // database stored in user's system
+                let storechain = std::fs::File::options().append(true).open("blockchain.json");
+                match storechain {
+                    core::result::Result::Ok(mut sc) => {
+                        let serialise_chain = serde_json::to_string(&bchain);
+                        match serialise_chain {
+                            core::result::Result::Ok(scx) => {
+                                let _ = sc.write_all(scx.as_bytes());
+                                let x = std::fs::File::options().read(true).open("blockchain.json").unwrap();
+                                dbg!("{:?}", x);
+                            },
+                            Err(scxe) => {
+                                println!("cannot add data to local chain data = {}", scxe);
+                            }
+                        }
+                    },
+                    Err(sce) => {
+                        println!("issue opening & appending to file = {}", sce);
+                    }
+                }
+                return bchain;
             }
         }
-        // for every default blockchain returned
-        // invalidate the network resource ...
-        Ok(Blockchain::default())
+        // at this point block is not valid
+        // return or block & truncate user
+        // but also return an empty chain
+        Blockchain::default()
     }
-}
 
-#[derive(NetworkBehaviour)]
-struct BlockNode {
-    gossipsub: gossipsub::Behaviour,
-    mdns: mdns::tokio::Behaviour
-}
+    pub fn add_block(block: Block8) -> Result<Blockchain> {
+        let mut blocks: Vec<Block8> = Vec::new();
+        let block_valid = block.valid.clone();
+        if block_valid {
+            let block_data = block.block_data.get(0).unwrap().as_str().as_bytes();
 
-#[tokio::main]
-async fn _essex_sim() -> Result<(), Box<dyn std::error::Error>> {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .try_init();
-    let mut swarm = libp2p::SwarmBuilder::with_new_identity()
-        .with_tokio()
-        .with_tcp(
-            tcp::Config::default(),
-            noise::Config::new,
-            yamux::Config::default,
-        )?
-        .with_quic()
-        .with_behaviour(|key| {
-            let msg_fn_id = |message: &gossipsub::Message| {
-                let mut s = DefaultHasher::new();
-                message.data.hash(&mut s);
-                gossipsub::MessageId::from(s.finish().to_string())
+            dbg!("block data", &block.block_data);
+            let block_bytes = String::from_utf8(Vec::from(block_data))?;
+            let mut rng = rand::thread_rng();
+            let bits = 2048;
+            let secret = RsaPrivateKey::new(&mut rng, bits)?;
+            let public = RsaPublicKey::from(&secret);
+            let enc_block = public.encrypt(&mut rng, Pkcs1v15Encrypt, block_bytes.as_bytes())?;
+            let dec_block = secret.decrypt(Pkcs1v15Encrypt, &enc_block)?;
+            assert_eq!(&block_data[..], &dec_block[..]);
+            blocks.push(block.clone());
+            let new_blockchain = Blockchain {
+                chain: blocks,
+                timestamp: SystemTime::now(),
             };
-            let goss_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(10))
-                .validation_mode(gossipsub::ValidationMode::Strict)
-                .message_id_fn(msg_fn_id)
-                .build()
-                .map_err(|x| print!("{}", x))
-                .unwrap();
-            let gossipsub = gossipsub::Behaviour::new(
-                gossipsub::MessageAuthenticity::Signed(key.clone()),
-                goss_config,
-            )?;
-            let mdns =
-                mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())
-                    .unwrap();
-            Ok(BlockNode { gossipsub, mdns })
-        })?
-        .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
-        .build();
-    let gtopic = gossipsub::IdentTopic::new("test-net");
-    let _ = swarm.behaviour_mut().gossipsub.subscribe(&gtopic);
-    let mut stdin = io::BufReader::new(io::stdin()).lines();
-    swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
-    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
-    println!("any messages sent would be sent to peers");
-
-    loop {
-        select! {
-            Ok(Some(line)) = stdin.next_line() => {
-                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(gtopic.clone(),line.as_bytes()){
-                    println!("{e}")
-                }
-            }
-            event = swarm.select_next_some() => match event {
-                SwarmEvent::Behaviour(BlockNodeEvent::Mdns(mdns::Event::Discovered(list))) => {
-                    for(peer_id, _multiaddr) in list {
-                        println!("discovered peer {peer_id}");
-                        swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                    }
-                },
-                SwarmEvent::Behaviour(BlockNodeEvent::Mdns(mdns::Event::Expired(list))) => {
-                    for(peer_id, _multiaddr) in list {
-                        println!("mdns discover expired: {peer_id}");
-                        swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
-                    }
-                },
-                SwarmEvent::Behaviour(BlockNodeEvent::Gossipsub(gossipsub::Event::Message{
-                    propagation_source:peer_id,
-                    message_id:id,
-                    message
-                })) => {
-                    println!("Got message {} with id: {id} from peer: {peer_id}", String::from_utf8_lossy(&message.data))
-                },
-                SwarmEvent::NewListenAddr {address, ..} => {
-                    println!("local node is listening on {address}")
-                }
-                _ => {},
-            }
+            return Ok(new_blockchain);
         }
+        Ok(Blockchain::default())
     }
 }

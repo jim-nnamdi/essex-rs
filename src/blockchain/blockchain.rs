@@ -4,7 +4,7 @@ use rand::rngs::OsRng;
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 use secp256k1::{hashes::sha256, Message};
 use serde::{Deserialize, Serialize};
-use std::{mem, time::SystemTime, io::Write};
+use std::{time::SystemTime, io::Write};
 
 type Block8 = block::block::Block;
 

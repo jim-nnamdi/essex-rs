@@ -10,10 +10,85 @@ pub struct Account {
     pub acc_balance: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ANode {
     pub values: Vec<i32>,
     pub childs: Vec<ANode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LNode {
+    pub dx: i32,
+    pub dy: Box<Option<LNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LNodeLeafs {
+    pub head: Box<Option<LNode>>,
+    pub tail: Box<Option<LNode>>,
+}
+
+pub struct LNodeLeafsIterator<'a> {
+    pub head_leaf_iter: Box<dyn Iterator<Item = &'a LNode> + 'a>,
+    pub tail_leaf_iter: Box<dyn Iterator<Item = &'a LNode> + 'a>,
+}
+
+impl<'a> Iterator for LNodeLeafsIterator<'a> {
+    type Item = &'a LNode;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(x) = self.head_leaf_iter.next() {
+            Some(x)
+        } else {
+            if let Some(y) = self.tail_leaf_iter.next() {
+                self.head_leaf_iter = Box::new(y.dy.iter());
+                self.next()
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl LNode {
+    pub fn zero_check<T: PartialOrd + From<i32>>(&self, v: T) -> bool {
+        let data = T::from(0);
+        if v == data {
+            return true;
+        }
+        false
+    }
+    pub fn new(&self) -> LNode {
+        LNode {
+            dx: 0,
+            dy: Box::new(None),
+        }
+    }
+    pub fn new_lnode(&self, data: i32, mut nl: LNodeLeafs) -> Result<LNode> {
+        let nlh = nl.head.clone().unwrap().dx;
+        let nln = nl.head.clone().unwrap().dy;
+        if nlh == 0 && nln.is_none() {
+            nl.head.clone().unwrap().dx = data;
+            nl.head.clone().unwrap().dy = Box::new(None).into();
+            return Ok(nl.head.unwrap());
+        } else {
+            let mut newnode = self.new();
+            newnode.dx = data;
+            newnode.dy = Box::new(None);
+            nl.head = Box::new(Some(newnode));
+            newnode = nl.head.unwrap();
+            dbg!(&newnode);
+            Ok(newnode.clone())
+        }
+    }
+    pub fn lnode_walk<'a>(&'a self, z: &'a LNodeLeafs) -> Box<dyn Iterator<Item = &'a i32> + 'a> {
+        Box::new(
+            z.head
+                .iter()
+                .chain(z.tail.iter())
+                .map(|f| f.lnode_walk(z))
+                .flatten(),
+        )
+    }
 }
 
 pub struct ANodeIterator<'a> {

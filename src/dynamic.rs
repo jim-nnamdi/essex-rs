@@ -1,9 +1,9 @@
 use futures::stream::StreamExt;
-use libp2p::{Multiaddr, Swarm, PeerId};
 use libp2p::{gossipsub, mdns, noise, swarm::NetworkBehaviour, swarm::SwarmEvent, tcp, yamux};
+use libp2p::{Multiaddr, PeerId, Swarm};
 use log::info;
-use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::time::Duration;
 use tokio::io::{self, AsyncBufReadExt};
@@ -23,8 +23,7 @@ pub struct EssexBehaviour {
 pub fn _ts_demo() {
     let genesis = block::Block::new();
     let account = account::Account::create("hello").unwrap();
-    let cb =
-        <block::Block as _BlockT>::create_essex_block(genesis, account, "hello").unwrap();
+    let cb = <block::Block as _BlockT>::create_essex_block(genesis, account, "hello").unwrap();
     let bk = blockchain::Blockchain::_add_block_to_chain(cb.clone());
     println!("{:?}", bk);
 }
@@ -43,7 +42,7 @@ pub fn _print_nodes(swarm: &Swarm<EssexBehaviour>) {
     nodes.iter().for_each(|x| info!("{}\n", x))
 }
 
-pub fn _blacklist_invalid_tx(leafval: i32, node:&PeerId, swarm: &mut Swarm<EssexBehaviour>) {
+pub fn _blacklist_invalid_tx(leafval: i32, node: &PeerId, swarm: &mut Swarm<EssexBehaviour>) {
     let min_val = 5;
     if leafval < min_val {
         info!("blacklisted: {}\n", node);
@@ -52,7 +51,11 @@ pub fn _blacklist_invalid_tx(leafval: i32, node:&PeerId, swarm: &mut Swarm<Essex
 }
 
 #[tokio::main]
-pub async fn _essex_sim<'a>(enode_topic: &'a str, enode_addr: Multiaddr, enode_addr_2: Multiaddr) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn _essex_sim<'a>(
+    enode_topic: &'a str,
+    enode_addr: Multiaddr,
+    enode_addr_2: Multiaddr,
+) -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .try_init();

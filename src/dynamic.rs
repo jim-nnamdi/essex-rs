@@ -1,6 +1,8 @@
 use futures::stream::StreamExt;
-use libp2p::Multiaddr;
+use libp2p::{Multiaddr, Swarm, PeerId};
 use libp2p::{gossipsub, mdns, noise, swarm::NetworkBehaviour, swarm::SwarmEvent, tcp, yamux};
+use log::info;
+use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::time::Duration;
@@ -25,6 +27,28 @@ pub fn _ts_demo() {
         <block::Block as _BlockT>::create_essex_block(genesis, account, "hello").unwrap();
     let bk = blockchain::Blockchain::_add_block_to_chain(cb.clone());
     println!("{:?}", bk);
+}
+
+pub fn _get_nodes(swarm: &Swarm<EssexBehaviour>) -> Vec<String> {
+    let nodes = swarm.behaviour().mdns.discovered_nodes();
+    let mut unique_nodes = HashSet::new();
+    for leafs in nodes {
+        unique_nodes.insert(leafs);
+    }
+    unique_nodes.iter().map(|x| x.to_string()).collect()
+}
+
+pub fn _print_nodes(swarm: &Swarm<EssexBehaviour>) {
+    let nodes = _get_nodes(swarm);
+    nodes.iter().for_each(|x| info!("{}\n", x))
+}
+
+pub fn _blacklist_invalid_tx(leafval: i32, node:&PeerId, swarm: &mut Swarm<EssexBehaviour>) {
+    let min_val = 5;
+    if leafval < min_val {
+        info!("blacklisted: {}\n", node);
+        swarm.behaviour_mut().gossipsub.blacklist_peer(node);
+    }
 }
 
 #[tokio::main]

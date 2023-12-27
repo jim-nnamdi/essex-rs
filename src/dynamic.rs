@@ -4,6 +4,7 @@ use libp2p::{Multiaddr, PeerId, Swarm};
 use log::info;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
+use std::env;
 use std::hash::{Hash, Hasher};
 use std::time::Duration;
 use tokio::io::{self, AsyncBufReadExt};
@@ -144,8 +145,8 @@ pub async fn _essex_sim<'a>(
                     println!("👨🏾‍💻 Chain Devx: {}", "Jim Nnamdi");
                     println!("🚀 Chain Specs: {}", "random specs");
                     println!("🧰 Chain Role: {}", "authority");
-                    println!("🛢 Chain DBX: {}", "/local/db/essex.db");
-                    println!("🎱 Operating system: {}", "MacOS m1");
+                    println!("🛢 Chain DBX: {}", "/blockchain.json");
+                    println!("🎱 Operating system: {}", env::consts::OS);
                     println!("🧶 Architecture: {}", "amd 64 intel");
                     println!("🌈 Node Listener: {}", address);
                 }

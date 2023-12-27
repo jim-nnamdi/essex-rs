@@ -21,6 +21,39 @@ discovered peer 12D3KooWFaByC5sCBw6t3GfEo1NGvEb2xBdLFEiwnzEx3wCkAHHU
 
 The block returns the chain version and developer and the specifications and the local DB location and Operating system architecture with the Node listener data and discovered peers.
 
+# Account Twist Fix
+(wip: might remove)
+Account chain Linking: still working on proof of concept
+```shell 
+
+#[derive(Debug, Clone)]
+pub struct LNodeLeafs {
+    pub head: Box<Option<LNode>>,
+    pub tail: Box<Option<LNode>>,
+}
+
+pub struct LNodeLeafsIterator<'a> {
+    pub head_leaf_iter: Box<dyn Iterator<Item = &'a LNode> + 'a>,
+    pub tail_leaf_iter: Box<dyn Iterator<Item = &'a LNode> + 'a>,
+}
+
+impl<'a> Iterator for LNodeLeafsIterator<'a> {
+    type Item = &'a LNode;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(x) = self.head_leaf_iter.next() {
+            Some(x)
+        } else {
+            if let Some(y) = self.tail_leaf_iter.next() {
+                self.head_leaf_iter = Box::new(y.dy.iter());
+                self.next()
+            } else {
+                None
+            }
+        }
+    }
+}
+```
+
 # Essex Features
 - [x] Block generation
 - [x] Chain generation

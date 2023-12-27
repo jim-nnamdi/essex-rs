@@ -63,7 +63,7 @@ impl<'a> Iterator for LNodeLeafsIterator<'a> {
 - [x] P2P Networking & Discovery
 
 # Essex Todo
-- [x] Linking Accounts with Blocks
-- [x] Linking Transactions & Accounts
-- [x] Linking Accounts and Transactions
-- [x] Publish transactions on Local Explorer
+- [ ] Linking Accounts with Blocks
+- [ ] Linking Transactions & Accounts
+- [ ] Linking Accounts and Transactions
+- [ ] Publish transactions on Local Explorer

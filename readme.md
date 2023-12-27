@@ -54,6 +54,15 @@ impl<'a> Iterator for LNodeLeafsIterator<'a> {
 }
 ```
 
+# Chain Creation
+Currently mode of creating chain is very unorthodox and not advisable.
+
+```shell 
+🌈 Latest known block: bdb1b9639cd2a4269d9ddb08ad328b5655722033fc632e0b199bf4f80f9e2cf3
+Got message "createchain" with id: 3135393436363738363136373038313939303039 from peer: 12D3KooWJj46mktdrp57acSHHLSxUiLFDP5Cr7ppXV5d1D2iDxrz
+```
+This would be cleaned up on merging accounts with transactions and vice versa.
+
 # Essex Features
 - [x] Block generation
 - [x] Chain generation

@@ -20,12 +20,19 @@ pub struct EssexBehaviour {
     pub mdns: mdns::tokio::Behaviour,
 }
 
-pub fn _ts_demo() {
+pub fn block_handler() {
     let genesis = block::Block::new();
     let account = account::Account::create("hello").unwrap();
     let cb = <block::Block as _BlockT>::create_essex_block(genesis, account, "hello").unwrap();
     let bk = blockchain::Blockchain::_add_block_to_chain(cb.clone());
-    println!("{:?}", bk);
+    if bk.chain.len() > 0 {
+        // this calls the latest block hash
+        // on the first block on the chain
+        println!(
+            "🌈 Latest known block: {}",
+            bk.chain.get(0).unwrap().block_hash
+        );
+    }
 }
 
 pub fn _get_nodes(swarm: &Swarm<EssexBehaviour>) -> Vec<String> {
@@ -101,6 +108,7 @@ pub async fn _essex_sim<'a>(
     loop {
         select! {
             Ok(Some(line)) = stdin.next_line() => {
+                // impl Topic<IdHash> && impl Into<Vec<u8>>
                 if let Err(e) = swarm.behaviour_mut().gossipsub.publish(gtopic.clone(),line.as_bytes()){
                     println!("{e}")
                 }
@@ -127,12 +135,19 @@ pub async fn _essex_sim<'a>(
                         // we assume createchain is a command
                         // to simulate & prepare a new chain
                         // in the blockchain : _ts_demo()-x
-                        _ts_demo();
+                        block_handler();
                     }
                     println!("Got message {:?} with id: {id} from peer: {peer_id}", String::from_utf8_lossy(&message.data))
                 },
                 SwarmEvent::NewListenAddr {address, ..} => {
-                    println!("local node is listening on {address}")
+                    println!("🆚 Chain Verx: {}", "v1.0.0");
+                    println!("👨🏾‍💻 Chain Devx: {}", "Jim Nnamdi");
+                    println!("🚀 Chain Specs: {}", "random specs");
+                    println!("🧰 Chain Role: {}", "authority");
+                    println!("🛢 Chain DBX: {}", "/local/db/essex.db");
+                    println!("🎱 Operating system: {}", "MacOS m1");
+                    println!("🧶 Architecture: {}", "amd 64 intel");
+                    println!("🌈 Node Listener: {}", address);
                 }
                 _ => {},
             }

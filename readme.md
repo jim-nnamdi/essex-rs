@@ -20,3 +20,17 @@ discovered peer 12D3KooWFaByC5sCBw6t3GfEo1NGvEb2xBdLFEiwnzEx3wCkAHHU
 ```
 
 The block returns the chain version and developer and the specifications and the local DB location and Operating system architecture with the Node listener data and discovered peers.
+
+# Essex Features
+- [x] Block generation
+- [x] Chain generation
+- [x] Account implementation
+- [x] Transaction implementation
+- [x] Secure cryptographic Algorithms
+- [x] P2P Networking & Discovery
+
+# Essex Todo
+- [x] Linking Accounts with Blocks
+- [x] Linking Transactions & Accounts
+- [x] Linking Accounts and Transactions
+- [x] Publish transactions on Local Explorer

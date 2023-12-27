@@ -15,6 +15,11 @@ use crate::{
     sec8::sec8::{self, sec8_block_id_hash},
 };
 const VMAX: u32 = 30;
+
+/// Trait for the block state
+/// we create a new block and 
+/// Custom Block implementation
+/// Validate block data implementation
 pub trait _BlockT {
     fn new() -> Self;
     fn create_essex_block(block: Block, acc: Account, msg: &str) -> Result<Block>;
@@ -23,15 +28,22 @@ pub trait _BlockT {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Block {
+    // generated hash of the block data
     pub block_hash: String,
+    // hash of the previous block
     pub prev_hash: String,
+    // who validated this block ?
     pub validator: String,
+    // Block signature data 
     pub signature: String,
+    // block information
     pub block_data: Vec<String>,
+    // is block valid ?
     pub valid: bool,
+    // Block creation time
     pub timestamp: SystemTime,
 }
-
+ 
 impl Default for Block {
     fn default() -> Self {
         let sec8_ks = sec8_block_id_hash().unwrap();
